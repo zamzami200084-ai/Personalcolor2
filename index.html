@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Color Self-Test</title>
+    <!-- Tailwind CSS 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 폰트 로드 (Pretendard) -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+            background-color: #FAFAFA;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 색상 칩 호버 애니메이션 부드럽게 설정 */
+        .color-chip {
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .color-chip:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex items-center justify-center p-4">
+
+    <!-- 전체 래퍼 -->
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden min-h-[600px] relative flex flex-col">
+        
+        <!-- 1. 시작 화면 -->
+        <div id="home-screen" class="flex-1 flex flex-col items-center justify-center p-8 text-center fade-in">
+            <div class="w-24 h-24 mb-6 rounded-full bg-gradient-to-tr from-pink-300 via-purple-300 to-indigo-400 flex items-center justify-center shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold mb-3 text-gray-900">What's My Personal Color?</h1>
+            <p class="text-gray-500 mb-8 leading-relaxed">
+                Answer 8 simple questions about your skin tone,<br>eye color, and more<br>to find your perfect color palette!
+            </p>
+            <button onclick="startQuiz()" class="w-full bg-gray-900 text-white font-semibold py-4 rounded-2xl hover:bg-gray-800 transition-colors shadow-md">
+                Start Test
+            </button>
+        </div>
+
+        <!-- 2. 질문 화면 -->
+        <div id="quiz-screen" class="hidden flex-1 flex flex-col p-6">
+            <!-- 진행률 표시줄 -->
+            <div class="w-full bg-gray-100 rounded-full h-2.5 mb-2 mt-4">
+                <div id="progress-bar" class="bg-indigo-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div class="text-right text-sm text-gray-400 font-medium mb-8">
+                <span id="question-number">1</span> / 8
+            </div>
+
+            <!-- 질문 내용 -->
+            <div class="flex-1 flex flex-col justify-center mb-8 fade-in" id="question-container">
+                <h2 id="question-text" class="text-2xl font-bold text-gray-900 leading-snug mb-8 break-keep">
+                    <!-- 질문이 여기에 들어갑니다 -->
+                </h2>
+                
+                <div class="space-y-4">
+                    <button onclick="selectAnswer(0)" id="btn-a" class="w-full text-left p-5 bg-gray-50 hover:bg-indigo-50 border border-gray-100 hover:border-indigo-200 rounded-2xl transition-all font-medium text-gray-700 text-lg shadow-sm">
+                        <!-- 답변 A -->
+                    </button>
+                    <button onclick="selectAnswer(1)" id="btn-b" class="w-full text-left p-5 bg-gray-50 hover:bg-indigo-50 border border-gray-100 hover:border-indigo-200 rounded-2xl transition-all font-medium text-gray-700 text-lg shadow-sm">
+                        <!-- 답변 B -->
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 로딩 화면 -->
+        <div id="loading-screen" class="hidden flex-1 flex flex-col items-center justify-center p-8 text-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-500 mb-4"></div>
+            <p class="text-lg font-medium text-gray-600">Analyzing your colors...</p>
+        </div>
+
+        <!-- 4. 결과 화면 -->
+        <div id="result-screen" class="hidden flex-1 flex flex-col bg-white overflow-y-auto">
+            <!-- 결과 헤더 (JS에서 배경색 지정됨) -->
+            <div id="result-header" class="p-8 text-center rounded-b-[40px] transition-colors duration-500 relative">
+                <p class="text-sm font-bold uppercase tracking-wider mb-2 opacity-80" id="result-season">Season</p>
+                <h1 class="text-3xl font-extrabold mb-3" id="result-title">Personal Color</h1>
+                <p class="text-sm font-medium opacity-90 leading-relaxed" id="result-desc">Description</p>
+            </div>
+
+            <div class="p-6 flex-1 flex flex-col">
+                <!-- 컬러 팔레트 영역 -->
+                <div class="mb-8 fade-in" style="animation-delay: 0.2s;">
+                    <h3 class="text-lg font-bold mb-4 text-gray-800">Best Color Palette</h3>
+                    <div id="color-palette" class="grid grid-cols-5 gap-3">
+                        <!-- 색상 칩들이 JS를 통해 생성됩니다 -->
+                    </div>
+                </div>
+
+                <!-- 추천 영역 -->
+                <div class="bg-gray-50 rounded-2xl p-6 mb-8 space-y-5 fade-in" style="animation-delay: 0.4s;">
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-500 mb-2 flex items-center">
+                            <span class="mr-2">💄</span> Recommended Lip Colors
+                        </h4>
+                        <p id="recommend-lip" class="font-medium text-gray-800">Coral, Peach</p>
+                    </div>
+                    <div class="w-full h-px bg-gray-200"></div>
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-500 mb-2 flex items-center">
+                            <span class="mr-2">👗</span> Recommended Clothing Colors
+                        </h4>
+                        <p id="recommend-clothes" class="font-medium text-gray-800">Ivory, Camel</p>
+                    </div>
+                </div>
+
+                <!-- 다시하기 버튼 -->
+                <button onclick="resetQuiz()" class="mt-auto w-full bg-gray-100 text-gray-700 font-semibold py-4 rounded-2xl hover:bg-gray-200 transition-colors">
+                    Retake Test
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 스크립트 로직 -->
+    <script>
+        // 질문 데이터 세트
+        // 타입: W(Warm), C(Cool), L(Light/밝음), D(Deep/어두움)
+        const questions = [
+            {
+                q: "What color are the veins on the inside of your wrist?",
+                answers: [
+                    { text: "Mostly green or olive", type: "W" },
+                    { text: "Mostly blue or purple", type: "C" }
+                ]
+            },
+            {
+                q: "Which jewelry color looks best on you?",
+                answers: [
+                    { text: "Warm Gold", type: "W" },
+                    { text: "Cool Silver", type: "C" }
+                ]
+            },
+            {
+                q: "How does your skin react to the sun?",
+                answers: [
+                    { text: "Burns easily and turns red", type: "L" },
+                    { text: "Tans easily and turns golden/brown", type: "D" }
+                ]
+            },
+            {
+                q: "Which lipstick shades suit you best?",
+                answers: [
+                    { text: "Orange, peach, coral, or brick", type: "W" },
+                    { text: "Hot pink, rose, magenta, or plum", type: "C" }
+                ]
+            },
+            {
+                q: "What is your natural hair and eye color?",
+                answers: [
+                    { text: "Light brown or soft overall look", type: "L" },
+                    { text: "Dark brown/black with high contrast", type: "D" }
+                ]
+            },
+            {
+                q: "Which clothing colors make your face glow?",
+                answers: [
+                    { text: "Warm ivory, beige, or brown", type: "W" },
+                    { text: "Pure white, black, or pastel blue", type: "C" }
+                ]
+            },
+            {
+                q: "How would you describe your overall skin tone?",
+                answers: [
+                    { text: "Light, bright, and translucent", type: "L" },
+                    { text: "Calm, stable, and deep", type: "D" }
+                ]
+            },
+            {
+                q: "How much redness is in your bare face?",
+                answers: [
+                    { text: "Little redness, mostly yellow/golden undertones", type: "W" },
+                    { text: "Noticeable redness, mostly pink undertones", type: "C" }
+                ]
+            }
+        ];
+
+        // 결과 데이터 세트
+        const resultsData = {
+            spring: {
+                season: "Spring Warm",
+                title: "Spring Warm",
+                desc: "Lively and lovely energy! Warm and cheerful colors will light up your face.",
+                headerBg: "bg-orange-100",
+                headerText: "text-orange-800",
+                colors: ["#FF9E9E", "#FFB37C", "#FFD369", "#E2F0CB", "#B5EAD7", "#FFDAC1", "#FF9AA2", "#FF8882", "#F3C583", "#A2E1D9"],
+                lips: "Coral, Light Peach, Orange Red, Apricot",
+                clothes: "Ivory, Camel, Peach, Light Green, Warm Pink"
+            },
+            summer: {
+                season: "Summer Cool",
+                title: "Summer Cool",
+                desc: "Refreshing and elegant vibe! Calm and cool pastel tones make your clear skin shine even more.",
+                headerBg: "bg-blue-100",
+                headerText: "text-blue-800",
+                colors: ["#E0BBE4", "#957DAD", "#D291BC", "#FEC8D8", "#FFDFD3", "#C2E2F5", "#A6C1EE", "#FBC2EB", "#E6E6FA", "#B0C4DE"],
+                lips: "Light Pink, Raspberry, Rose, Fuchsia",
+                clothes: "Pure White, Pastel Blue, Lavender, Gray, Navy"
+            },
+            autumn: {
+                season: "Autumn Warm",
+                title: "Autumn Warm",
+                desc: "Mature and atmospheric charm! Deep and calm colors elevate your elegance.",
+                headerBg: "bg-amber-100",
+                headerText: "text-amber-900",
+                colors: ["#D06224", "#AE431E", "#8A8635", "#E9C46A", "#F4A261", "#E76F51", "#6B4F4F", "#483434", "#9A7B4F", "#C49A6C"],
+                lips: "Brick Red, Chili, Warm Dried Rose, Brown Lips",
+                clothes: "Trench Coat Beige, Khaki, Brown, Mustard, Deep Red"
+            },
+            winter: {
+                season: "Winter Cool",
+                title: "Winter Cool",
+                desc: "Sophisticated and urban charisma! High contrast and vivid colors define your features clearly.",
+                headerBg: "bg-purple-100",
+                headerText: "text-purple-900",
+                colors: ["#000000", "#FFFFFF", "#A91D3A", "#C73659", "#151515", "#1F305E", "#6A0DAD", "#293462", "#00C9A7", "#E90064"],
+                lips: "Burgundy, Deep Red, Plum, Hot Pink, Magenta",
+                clothes: "Black, Pure White, Navy Blue, Hot Pink, Emerald"
+            }
+        };
+
+        // 상태 변수
+        let currentQuestionIndex = 0;
+        let scores = { W: 0, C: 0, L: 0, D: 0 };
+
+        // DOM 요소
+        const homeScreen = document.getElementById('home-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const loadingScreen = document.getElementById('loading-screen');
+        const resultScreen = document.getElementById('result-screen');
+        
+        const questionText = document.getElementById('question-text');
+        const btnA = document.getElementById('btn-a');
+        const btnB = document.getElementById('btn-b');
+        const progressBar = document.getElementById('progress-bar');
+        const questionNumber = document.getElementById('question-number');
+        const questionContainer = document.getElementById('question-container');
+
+        // 퀴즈 시작
+        function startQuiz() {
+            homeScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            currentQuestionIndex = 0;
+            scores = { W: 0, C: 0, L: 0, D: 0 };
+            renderQuestion();
+        }
+
+        // 질문 렌더링
+        function renderQuestion() {
+            // 애니메이션 재시작을 위한 꼼수
+            questionContainer.classList.remove('fade-in');
+            void questionContainer.offsetWidth; // trigger reflow
+            questionContainer.classList.add('fade-in');
+
+            const qData = questions[currentQuestionIndex];
+            questionText.innerHTML = qData.q.replace('\n', '<br>');
+            
+            btnA.innerText = qData.answers[0].text;
+            btnA.dataset.type = qData.answers[0].type;
+            
+            btnB.innerText = qData.answers[1].text;
+            btnB.dataset.type = qData.answers[1].type;
+
+            questionNumber.innerText = currentQuestionIndex + 1;
+            
+            // 진행률 바 업데이트
+            const progress = ((currentQuestionIndex) / questions.length) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        // 답변 선택
+        function selectAnswer(index) {
+            const selectedType = questions[currentQuestionIndex].answers[index].type;
+            scores[selectedType]++;
+            
+            currentQuestionIndex++;
+            
+            if (currentQuestionIndex < questions.length) {
+                renderQuestion();
+            } else {
+                // 마지막 문제 후 프로그래스바 100% 채우기
+                progressBar.style.width = `100%`;
+                showLoading();
+            }
+        }
+
+        // 로딩 화면 표시 및 결과 계산
+        function showLoading() {
+            quizScreen.classList.add('hidden');
+            loadingScreen.classList.remove('hidden');
+
+            setTimeout(() => {
+                calculateAndShowResult();
+            }, 1500); // 1.5초 로딩 연출
+        }
+
+        // 결과 계산 및 화면 렌더링
+        function calculateAndShowResult() {
+            loadingScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+
+            // 로직: 웜(W) vs 쿨(C) / 라이트(L) vs 딥(D)
+            const isWarm = scores.W >= scores.C;
+            const isLight = scores.L >= scores.D;
+
+            let resultKey = '';
+            if (isWarm && isLight) resultKey = 'spring';
+            else if (isWarm && !isLight) resultKey = 'autumn';
+            else if (!isWarm && isLight) resultKey = 'summer';
+            else if (!isWarm && !isLight) resultKey = 'winter';
+
+            const result = resultsData[resultKey];
+
+            // 헤더 UI 업데이트
+            const header = document.getElementById('result-header');
+            // 기존 클래스 제거 후 새 색상 클래스 추가
+            header.className = `p-8 text-center rounded-b-[40px] transition-colors duration-500 relative ${result.headerBg} ${result.headerText}`;
+            
+            document.getElementById('result-season').innerText = result.season;
+            document.getElementById('result-title').innerText = result.title;
+            document.getElementById('result-desc').innerText = result.desc;
+
+            // 팔레트 칩 생성 (10개)
+            const paletteContainer = document.getElementById('color-palette');
+            paletteContainer.innerHTML = ''; // 초기화
+            
+            result.colors.forEach((color, i) => {
+                const chip = document.createElement('div');
+                // color-chip 클래스가 hover 애니메이션을 담당 (상단 style 태그 참조)
+                chip.className = 'color-chip w-full aspect-square rounded-xl shadow-sm cursor-pointer border border-black/5';
+                chip.style.backgroundColor = color;
+                // 약간의 시간차를 두고 등장하는 애니메이션 효과 (선택사항)
+                chip.style.animation = `fadeIn 0.3s ease-out forwards ${i * 0.05}s`;
+                chip.style.opacity = '0'; // 애니메이션 시작 전 숨김
+                
+                // 테두리가 필요한 색상(예: 화이트)를 위한 처리
+                if(color === "#FFFFFF") {
+                    chip.classList.add('border-gray-300');
+                }
+                
+                paletteContainer.appendChild(chip);
+            });
+
+            // 추천 텍스트 업데이트
+            document.getElementById('recommend-lip').innerText = result.lips;
+            document.getElementById('recommend-clothes').innerText = result.clothes;
+        }
+
+        // 초기화 (다시하기)
+        function resetQuiz() {
+            resultScreen.classList.add('hidden');
+            homeScreen.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
